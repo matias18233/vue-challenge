@@ -17,7 +17,7 @@ export async function getTemplates(page = 1, rowsPerPage = 15) {
         })
         return response.data
     } catch (error) {
-        console.error('Error al obtener templates:', error)
+        console.error('Error getting templates:', error)
         throw error
     }
 }

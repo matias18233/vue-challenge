@@ -1,21 +1,19 @@
 <script setup lang="ts">
-  import { onMounted, ref,onBeforeUnmount } from 'vue'
+  import { onMounted, ref,onBeforeUnmount, computed } from 'vue'
   import { getTemplates } from '../services/templateService'
 
   const templates = ref([])
   const page = ref(1)
   const isLoading = ref(false)
   const hasMore = ref(true)
+  const filtroStatus = ref('ALL')
 
   onMounted(async () => {
     try {
       loadTemplates()
       window.addEventListener('scroll', handleScroll)
-      //const data = await getTemplates()
-      //templates.value = data.data
-      //console.log('Templates recibidos:', JSON.stringify(templates.value, null, 2))
     } catch (error) {
-      console.error('Error al cargar templates:', error)
+      console.error('Error loading templates:', error)
     }
   })
 
@@ -31,7 +29,8 @@
     try {
       const data = await getTemplates(page.value)
       const newTemplates = data.data
-      console.log('Templates recibidos:', JSON.stringify(templates.value, null, 2)) // BORRAR
+      
+      console.log('Templates received:', JSON.stringify(data.data, null, 2)) // BORRAR
 
       if (newTemplates.length === 0) {
         hasMore.value = false
@@ -40,11 +39,19 @@
         page.value++
       }
     } catch (err) {
-      console.error('Error al cargar más templates:', err)
+      console.error('Error loading more templates:', err)
     } finally {
       isLoading.value = false
     }
   }
+
+  const templatesFiltrados = computed(() => {
+    if (filtroStatus.value === 'ALL') {
+      return templates.value
+    }
+
+    return templates.value.filter(t => t.status?.toUpperCase() === filtroStatus.value.toUpperCase())
+  })
 
   function highlightVariables(text: string): string {
     return text.replace(/\{\{(.*?)\}\}/g, '<span class="text-blue-600 font-bold">{{ $1 }}</span>')
@@ -62,13 +69,24 @@
     }
   }
 </script>
+
 <template>
+  <div class="mb-4">
+    <label class="block text-sm font-medium text-gray-700 mb-1">Filter by status::</label>
+    <select v-model="filtroStatus" class="border border-gray-300 rounded px-3 py-2 text-sm">
+      <option value="ALL">All</option>
+      <option value="APPROVED">Approved</option>
+      <option value="PENDING">Pending</option>
+      <option value="REJECTED">Rejected</option>
+      <option value="draft">Draft</option>
+    </select>
+  </div>
   <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3"><!--Modificar según tamaño de pantalla-->
     <div v-if="templates.length === 0" class="text-gray-500">
-      Cargando templates...
+      Loading templates...
     </div>
 
-    <div v-for="(template, index) in templates" :key="index" class="border p-4 rounded bg-white shadow">
+    <div v-for="(template, index) in templatesFiltrados" :key="index" class="border p-4 rounded bg-white shadow">
       <!--
       <div class="mt-4 border rounded p-3 bg-gray-50">
         <p class="text-sm text-gray-600">Header: {{ template.components.header?.content }}</p>
@@ -77,6 +95,7 @@
         <p class="text-sm text-gray-600">Botones: {{ template.components.buttons?.length }}</p>
       </div>
       -->
+      <!--BORRAR-->
       <div class="mt-4 border rounded p-3 bg-gray-50">
         <div v-if="template.components.header?.content" class="font-semibold border-b pb-2 mb-2">
           {{ template.components.header.content }}
@@ -95,6 +114,7 @@
       <p class="text-sm text-gray-600">Estado: {{ template.status }}</p>
       <p class="text-sm text-gray-600">Idioma: {{ template.language }}</p>
       -->
+      <!--BORRAR-->
       <div v-if="template.components.buttons?.length" class="mt-3 space-y-1">
         <ul class="text-sm list-disc list-inside">
           <li v-for="(btn, i) in visibleButtons(template.components.buttons)" :key="btn.id">
@@ -106,6 +126,9 @@
         </ul>
       </div>
     </div>
+  </div>
+  <div v-if="isLoading" class="text-center text-gray-500 py-4">
+    Loading more templates...
   </div>
 </template>
 <style>
