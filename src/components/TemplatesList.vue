@@ -7,7 +7,7 @@
   onMounted(async () => {
     try {
       const data = await getTemplates()
-      templates.value = data
+      templates.value = data.data
       console.log('Templates recibidos:', templates.value)
     } catch (error) {
       console.error('Error al cargar templates:', err)
