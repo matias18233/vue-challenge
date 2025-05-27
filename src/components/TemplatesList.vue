@@ -1,18 +1,50 @@
 <script setup lang="ts">
-  import { onMounted, ref } from 'vue'
+  import { onMounted, ref,onBeforeUnmount } from 'vue'
   import { getTemplates } from '../services/templateService'
 
   const templates = ref([])
+  const page = ref(1)
+  const isLoading = ref(false)
+  const hasMore = ref(true)
 
   onMounted(async () => {
     try {
-      const data = await getTemplates()
-      templates.value = data.data
-      console.log('Templates recibidos:', JSON.stringify(templates.value, null, 2))
+      loadTemplates()
+      window.addEventListener('scroll', handleScroll)
+      //const data = await getTemplates()
+      //templates.value = data.data
+      //console.log('Templates recibidos:', JSON.stringify(templates.value, null, 2))
     } catch (error) {
       console.error('Error al cargar templates:', error)
     }
   })
+
+  onBeforeUnmount(() => {
+    window.removeEventListener('scroll', handleScroll)
+  })
+
+  async function loadTemplates() {
+    if (isLoading.value || !hasMore.value) return
+
+    isLoading.value = true
+
+    try {
+      const data = await getTemplates(page.value)
+      const newTemplates = data.data
+      console.log('Templates recibidos:', JSON.stringify(templates.value, null, 2)) // BORRAR
+
+      if (newTemplates.length === 0) {
+        hasMore.value = false
+      } else {
+        templates.value.push(...newTemplates)
+        page.value++
+      }
+    } catch (err) {
+      console.error('Error al cargar más templates:', err)
+    } finally {
+      isLoading.value = false
+    }
+  }
 
   function highlightVariables(text: string): string {
     return text.replace(/\{\{(.*?)\}\}/g, '<span class="text-blue-600 font-bold">{{ $1 }}</span>')
@@ -20,6 +52,14 @@
 
   function visibleButtons(buttons: any[]): any[] {
     return buttons.slice(0, 2)
+  }
+
+  function handleScroll() {
+    const bottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 100
+
+    if (bottom) {
+      loadTemplates()
+    }
   }
 </script>
 <template>
